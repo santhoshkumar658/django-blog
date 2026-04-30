@@ -2,13 +2,26 @@ from django.shortcuts import get_object_or_404, redirect, render
 
 from blogs.models import Blog, Category
 from django.contrib.auth.decorators import login_required
-from .forms import CategoryForm
+from .forms import BlogPostForm, CategoryForm
+from django.template.defaultfilters import slugify
 
 
 # Create your views here.
+
+def get_unique_slug(title, post_id=None):
+    slug = slugify(title)
+    unique_slug = slug
+    counter = 1
+
+    while Blog.objects.filter(slug=unique_slug).exclude(id=post_id).exists():
+        unique_slug = f'{slug}-{counter}'
+        counter += 1
+
+    return unique_slug
+
 @login_required(login_url='login')
 def dashboard(request):
-    category_count=Category.objects.all().count()
+    category_count = Category.objects.all().count()
     blogs_count = Blog.objects.all().count()
 
     context = {
@@ -20,34 +33,86 @@ def dashboard(request):
 def categories(request):
     return render(request, 'dashboard/categories.html')
 
+
 def add_category(request):
     if request.method == 'POST':
         form = CategoryForm(request.POST)
         if form.is_valid():
             form.save()
             return redirect('categories')
-    form=CategoryForm()
+    form = CategoryForm()
     context = {
         'form': form,
-    }   
-    return render(request, 'dashboard/add_category.html', context  )
+    }
+    return render(request, 'dashboard/add_category.html', context)
+
 
 def edit_category(request, pk):
-    category = get_object_or_404(Category ,pk=pk)
-    form=CategoryForm(instance=category)
+    category = get_object_or_404(Category, pk=pk)
     if request.method == 'POST':
         form = CategoryForm(request.POST, instance=category)
         if form.is_valid():
             form.save()
             return redirect('categories')
-        form = CategoryForm(instance=category)
+    form = CategoryForm(instance=category)
     context = {
         'form': form,
         'category': category,
     }
     return render(request, 'dashboard/edit_category.html', context)
 
+
 def delete_category(request, pk):
     category = get_object_or_404(Category, pk=pk)
     category.delete()
     return redirect('categories')
+
+
+def posts(request):
+    posts = Blog.objects.all()
+    context = {
+        'posts': posts,
+    }
+    return render(request, 'dashboard/posts.html', context)
+
+
+def add_post(request):
+    if request.method == 'POST':
+        form = BlogPostForm(request.POST, request.FILES)
+        if form.is_valid():
+            post = form.save(commit=False)
+            post.author = request.user
+            post.slug = get_unique_slug(form.cleaned_data['title'])
+            post.save()
+            return redirect('posts')
+        else:
+            print('form is invalid')
+            print(form.errors)
+    form = BlogPostForm()
+    context = {
+        'form': form,
+    }
+    return render(request, 'dashboard/add_post.html', context)
+
+def edit_post(request, pk):
+    post = get_object_or_404(Blog, pk=pk)
+    if request.method == 'POST':
+        form = BlogPostForm(request.POST, request.FILES, instance=post)
+        if form.is_valid():
+            post = form.save(commit=False)
+            post.author = request.user
+            post.slug = get_unique_slug(form.cleaned_data['title'], post.id)
+            post.save()
+            return redirect('posts')
+    form = BlogPostForm(instance=post)
+    context = {
+        'form': form,
+        'post': post,
+    }
+    return render(request, 'dashboard/edit_post.html', context)
+
+
+def delete_post(request, pk):
+    post = get_object_or_404(Blog, pk=pk)
+    post.delete()
+    return redirect('posts')           

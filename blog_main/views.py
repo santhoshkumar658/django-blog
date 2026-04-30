@@ -1,13 +1,13 @@
 from django.shortcuts import redirect, render
 from assignments.models import About
 from blogs.models import Blog, Category
-from .forms import RegisterationForm
+from .forms import RegistrationForm
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib import auth
 def home(request):
     categories = Category.objects.all()
-    featured_posts = Blog.objects.filter(is_featured=True,status='Published').order_by('updated_at')
-    posts = Blog.objects.filter(is_featured=False,status='Published')
+    featured_posts = Blog.objects.filter(is_featured=True, status='Published').exclude(slug='').order_by('updated_at')
+    posts = Blog.objects.filter(is_featured=False, status='Published').exclude(slug='')
 
     #fetch the about data
     try:
@@ -24,14 +24,14 @@ def home(request):
 
 def register(request):
     if request.method == 'POST':
-        form = RegisterationForm(request.POST)
+        form = RegistrationForm(request.POST)
         if form.is_valid():
             form.save()
             return redirect('register')
         else:
             print(form.errors)
     else:
-        form = RegisterationForm()
+        form = RegistrationForm()
     context={
         'form': form,
     }
