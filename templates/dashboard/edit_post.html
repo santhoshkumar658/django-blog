@@ -10,8 +10,8 @@
     {% include 'dashboard/sidebar.html' %}
 
     <!-- Right side content -->
-    <div class="col-md-9">
-        <h2>edit blog Post</h2>
+    <div class="col-md-9" >
+        <h2>edit blog Posts</h2>
         
         <form action="{% url 'edit_post' post.pk %}" method="POST" enctype="multipart/form-data">
             {% csrf_token %}
