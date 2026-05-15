@@ -7,7 +7,10 @@ from django.db.models import Q
 # Create your views here.
 def posts_by_category(request, category_id):
   # fetch the post that belogs to the catogory with the id category_id
-  posts = Blog.objects.filter(status= 'Published', category_id=category_id)
+  posts = Blog.objects.filter(
+    status='Published',
+    category_id=category_id,
+  ).exclude(slug='')
   # use try/except when we wnt to some custom action if the object is not found, for example redirect the user to homepage
   try:
     category = Category.objects.get(id=category_id)
@@ -47,7 +50,7 @@ def blogs(request, slug):
 
 def search(request):
   keyword = (request.GET.get('keyword') or '').strip()
-  blogs = Blog.objects.filter(status='Published')
+  blogs = Blog.objects.filter(status='Published').exclude(slug='')
   if keyword:
     blogs = blogs.filter(
       Q(title__icontains=keyword) |
@@ -61,4 +64,3 @@ def search(request):
     'keyword':keyword,
   }
   return render(request, 'search.html',context)
-
